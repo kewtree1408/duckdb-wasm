@@ -90,7 +90,12 @@ You can try the [Shell demo with loading of extensions](https://shell.duckdb.org
 Extension sizes will vary depending, among other things, on provided functionality or toolchain used.
 
 
-## Build from source
+## Development
+
+For building HTTPFS with the companion browser adapter and running its
+regression tests, see [Local HTTPFS development](HTTPFS_LOCAL_DEVELOPMENT.md).
+
+### Build from source
 
 The build requires:
 
@@ -153,6 +158,84 @@ command exits successfully.
 The development server uses port 8080 when available. If that port is already
 in use, `http-server` selects another port; open the URL printed under
 `Available on` in the terminal.
+
+### Use locally built unsigned extensions
+
+Local `.duckdb_extension.wasm` files are unsigned. DuckDB rejects them by
+default, so unsigned extensions must be enabled when the database is opened.
+The option cannot be enabled afterwards with SQL.
+
+The extension remains a separately loaded Wasm side module; do not import it
+into `app.tsx`. The local build places extensions under:
+
+```text
+build/extension_repository/<duckdb-revision>/<wasm-platform>/<extension>.duckdb_extension.wasm
+```
+
+For example, the base TPCH extension is served as:
+
+```text
+/extension_repository/<duckdb-revision>/wasm_base/tpch.duckdb_extension.wasm
+```
+
+DuckDB constructs this path from the configured repository, its revision, the
+selected platform, and the extension name. Include a local extension in the
+application as follows:
+
+1. Build the loadable base extension and, when required, its threads variant:
+
+   ```shell
+   make build_loadable
+   make build_loadable TARGET=threads
+   ```
+
+2. The local application configures the database before opening it. In
+   `packages/duckdb-wasm-app/src/app.tsx`, the provider uses:
+
+   ```tsx
+   <DuckDBProvider
+       config={{
+           allowUnsignedExtensions: true,
+           extensionRepository: `${window.location.origin}/extension_repository`,
+       }}
+   >
+   ```
+
+   Using `window.location.origin` keeps the repository URL correct if
+   `http-server` selects a port other than 8080.
+
+3. Rebuild the app, copy the repository into its served output, and restart
+   the development server:
+
+   ```shell
+   yarn workspace @duckdb/duckdb-wasm-app build:release
+   cp -R build/extension_repository packages/duckdb-wasm-app/build/release/
+   npx http-server packages/duckdb-wasm-app/build/release -c-1 -a 127.0.0.1 -p 8081
+   ```
+
+4. Close existing DuckDB-Wasm browser tabs and reopen `/original.html`. The
+   configured repository is then used automatically:
+
+   ```sql
+   INSTALL AND LOAD tpch;
+   ```
+
+   The repository can also be specified explicitly:
+
+   ```sql
+   INSTALL AND LOAD tpch
+   FROM 'http://127.0.0.1:8081/extension_repository';
+   ```
+
+Do not add a trailing slash to the explicit repository URL; DuckDB appends the
+revision and platform path itself. `SET allow_unsigned_extensions = true`
+cannot enable this after opening the database because DuckDB prevents changing
+the setting while the database is running. The current
+`build_loadable_unsigned` Make target is a placeholder and does not change this
+runtime policy.
+
+Only enable unsigned extensions for trusted local development artifacts. Keep
+signature verification enabled in production.
 
 ### Rebuild the web shell
 

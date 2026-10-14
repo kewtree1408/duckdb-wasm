@@ -43,22 +43,17 @@ const element = document.getElementById('root');
 const root = createRoot(element!);
 root.render(
     <DuckDBPlatform logger={logger} bundles={DUCKDB_BUNDLES}>
-        <DuckDBProvider>
+        <DuckDBProvider
+            config={{
+                allowUnsignedExtensions: true,
+                extensionRepository: `${window.location.origin}/extension_repository`,
+            }}
+        >
             <DuckDBConnectionProvider>
                 <BrowserRouter basename={basename}>
                     <Routes>
-                        <Route
-                            index
-                            element={
-                                    <Shell padding={[16, 0, 0, 20]} backgroundColor="#333" />
-                            }
-                        />
-                        <Route
-                            path="/versus"
-                            element={
-                                    <Versus />
-                            }
-                        />
+                        <Route index element={<Shell padding={[16, 0, 0, 20]} backgroundColor="#333" />} />
+                        <Route path="/versus" element={<Versus />} />
                         <Route path="*" element={<Navigate to="/" />} />
                     </Routes>
                 </BrowserRouter>
