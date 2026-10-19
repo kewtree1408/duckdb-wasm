@@ -378,7 +378,7 @@ check_httpfs_local:
 		exit 1; \
 	fi
 
-reconfigure_httpfs_local: check_httpfs_local
+reconfigure_httpfs_local: apply_patches check_httpfs_local
 	@for httpfs_variant in base threads; do \
 		httpfs_build_dir="build/relsize/$${httpfs_variant}/third_party/duckdb/src/duckdb_ep-build"; \
 		if [ -f "$${httpfs_build_dir}/CMakeCache.txt" ]; then \
@@ -500,6 +500,7 @@ build/docker_ci_image:
 	command -v emcc &> /dev/null || docker compose build
 	touch build/docker_ci_image
 
+.PHONY: patch_duckdb apply_patches
 patch_duckdb:
 	(find patches/duckdb/* -type f -name '*.patch' -print0 | xargs -0 cat | patch -p1 --forward -d submodules/duckdb) || true
 	(find patches/rapidjson/* -type f -name '*.patch' -print0 | xargs -0 cat | patch -p1 --forward -d submodules/rapidjson) || true
