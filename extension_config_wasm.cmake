@@ -16,6 +16,23 @@ if(DEFINED ENV{DUCKDB_HTTPFS_DIRECTORY}
     include("${EXTENSION_CONFIG_BASE_DIR}/httpfs.cmake")
 endif()
 
+if(DUCKDB_AWS_DIRECTORY)
+    # DuckDB's Wasm post-link reads LINKED_LIBS instead of the extension target's linked libraries.
+    set(DUCKDB_AWS_VCPKG_LIB_DIR "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib")
+    string(CONCAT DUCKDB_AWS_LINKED_LIBS
+           "-Wl,--start-group "
+           "${DUCKDB_AWS_VCPKG_LIB_DIR}/libaws*.a "
+           "${DUCKDB_AWS_VCPKG_LIB_DIR}/libcurl.a "
+           "${DUCKDB_AWS_VCPKG_LIB_DIR}/libssl.a "
+           "${DUCKDB_AWS_VCPKG_LIB_DIR}/libcrypto.a "
+           "${DUCKDB_AWS_VCPKG_LIB_DIR}/libs2n.a "
+           "${DUCKDB_AWS_VCPKG_LIB_DIR}/libz.a "
+           "-Wl,--end-group")
+    duckdb_extension_load(aws
+                          SOURCE_DIR "${DUCKDB_AWS_DIRECTORY}"
+                          LINKED_LIBS "${DUCKDB_AWS_LINKED_LIBS}")
+endif()
+
 # Arrow IPC reading and writing, linked statically into DuckDB-Wasm
 duckdb_extension_load(nanoarrow
                       SOURCE_DIR ${DUCKDB_NANOARROW_DIR}

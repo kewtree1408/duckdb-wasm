@@ -19,6 +19,19 @@ CORES=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
 
 # Extra CMake flags, e.g. -DDUCKDB_WASM_STATIC_TPCH=1 for benchmarks
 ADDITIONAL_FLAGS=${EXTRA_CMAKE_FLAGS:-}
+BUILD_VARIANT=
+if [ -n "${DUCKDB_AWS_DIRECTORY:-}" ]; then
+  if [ "${FEATURES}" != "base" ]; then
+    echo "duckdb-aws local builds support only the base Wasm target" >&2
+    exit 1
+  fi
+  BUILD_VARIANT=/local_extensions
+  DUCKDB_AWS_DIRECTORY="$(cd "${DUCKDB_AWS_DIRECTORY}" && pwd)"
+  VCPKG_TOOLCHAIN_PATH=${VCPKG_TOOLCHAIN_PATH:-${VCPKG_ROOT:-$HOME/vcpkg}/scripts/buildsystems/vcpkg.cmake}
+  EMSCRIPTEN_ROOT=${EMSCRIPTEN_ROOT:-$(em-config EMSCRIPTEN_ROOT)}
+  export EMSCRIPTEN_ROOT
+  ADDITIONAL_FLAGS="${ADDITIONAL_FLAGS} -DDUCKDB_AWS_DIRECTORY=${DUCKDB_AWS_DIRECTORY} -DCMAKE_TOOLCHAIN_FILE=${VCPKG_TOOLCHAIN_PATH} -DVCPKG_BUILD=1 -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${EMSCRIPTEN_ROOT}/cmake/Modules/Platform/Emscripten.cmake -DVCPKG_TARGET_TRIPLET=wasm32-emscripten -DVCPKG_MANIFEST_DIR=${DUCKDB_AWS_DIRECTORY}"
+fi
 SUFFIX=
 LINK_FLAGS=
 case $MODE in
@@ -45,7 +58,7 @@ LINK_FLAGS="${LINK_FLAGS} ${EXTRA_LINK_FLAGS:-}"
 echo "MODE=${MODE}"
 echo "FEATURES=${FEATURES}"
 
-BUILD_DIR="${PROJECT_ROOT}/build/${MODE}/${FEATURES}"
+BUILD_DIR="${PROJECT_ROOT}/build/${MODE}${BUILD_VARIANT}/${FEATURES}"
 mkdir -p ${BUILD_DIR}
 
 set -x

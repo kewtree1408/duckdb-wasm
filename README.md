@@ -188,26 +188,30 @@ build/extension_repository/<duckdb-revision>/wasm_base/httpfs.duckdb_extension.w
 build/extension_repository/<duckdb-revision>/wasm_threads/httpfs.duckdb_extension.wasm
 ```
 
-#### Run the HTTPFS test suite
+#### Run the local extension test suite
 
-With the HTTPFS checkout at `$HOME/work/duckdb-httpfs`, run the complete
-build and test sequence with:
+With the HTTPFS and AWS checkouts at `$HOME/work/duckdb-httpfs` and
+`$HOME/work/duckdb-aws`, run the complete build and test sequence with:
 
 ```shell
 make tests
 ```
 
-Use `DUCKDB_HTTPFS_DIRECTORY` when the checkout is elsewhere:
+Use `DUCKDB_HTTPFS_DIRECTORY` and `DUCKDB_AWS_DIRECTORY` when either checkout
+is elsewhere:
 
 ```shell
-make tests DUCKDB_HTTPFS_DIRECTORY=/path/to/duckdb-httpfs
+make tests \
+    DUCKDB_HTTPFS_DIRECTORY=/path/to/duckdb-httpfs \
+    DUCKDB_AWS_DIRECTORY=/path/to/duckdb-aws
 ```
 
-The target applies the repository patches, builds the base and threaded Wasm
-modules with the local HTTPFS side module, and then runs the Node.js, base
-Chrome, threaded Chrome, dedicated HTTPFS, threaded smoke, lint, and formatting
-checks. It runs JavaScript tests with Node.js 24 and detects Google Chrome or
-Chromium automatically. Override the detected commands when necessary:
+The target applies the repository patches, builds base and threaded Wasm with
+local HTTPFS side modules, builds the base Wasm AWS side module, and then runs
+the Node.js, base Chrome, threaded Chrome, dedicated HTTPFS and AWS, threaded
+smoke, lint, and formatting checks. It runs JavaScript tests with Node.js 24 and
+detects Google Chrome or Chromium automatically. Override the detected commands
+when necessary:
 
 ```shell
 make tests \
@@ -271,7 +275,58 @@ INSTALL AND LOAD httpfs;
 * An OpenSSL or `curl/curl.h` error means that the selected HTTPFS revision
   does not contain the required Emscripten build guards.
 * The warning that HTTPFS has a `vcpkg.json` but the build does not use vcpkg
-  is expected for this Emscripten build.
+  is expected for an HTTPFS-only Emscripten build.
+
+### Develop AWS locally
+
+The AWS extension is supported as a `wasm_base` side module. Its SDK
+dependencies are built with vcpkg, and its network calls use HTTPFS's browser
+transport. Build AWS and HTTPFS together from their local checkouts:
+
+```shell
+make build_aws_local \
+    DUCKDB_AWS_DIRECTORY=$HOME/work/duckdb-aws \
+    DUCKDB_HTTPFS_DIRECTORY=$HOME/work/duckdb-httpfs
+```
+
+`VCPKG_ROOT` defaults to `$HOME/vcpkg`. Set `VCPKG_TOOLCHAIN_PATH` when the
+vcpkg CMake toolchain is elsewhere. An empty vcpkg binary cache makes the first
+build take about 15-20 minutes while vcpkg compiles the AWS SDK dependencies for
+`wasm32-emscripten`. Dependency-enabled main modules use a separate build cache,
+so they do not reuse HTTPFS-only CMake configuration.
+
+The target validates both source paths, builds the base main module and both
+base side modules, and rebuilds the JavaScript package. It does not build a
+threaded AWS side module. During configuration, confirm that CMake reports both
+local sources:
+
+```text
+Load extension 'httpfs' from local path ".../duckdb-httpfs"
+Load extension 'aws' from '.../duckdb-aws'
+```
+
+The generated AWS module is placed at:
+
+```text
+build/extension_repository/<duckdb-revision>/wasm_base/aws.duckdb_extension.wasm
+```
+
+Prepare and serve the local application with:
+
+```shell
+make serve_aws_local \
+    DUCKDB_AWS_DIRECTORY=$HOME/work/duckdb-aws \
+    DUCKDB_HTTPFS_DIRECTORY=$HOME/work/duckdb-httpfs
+```
+
+Then open `/original.html` and run:
+
+```sql
+INSTALL AND LOAD aws;
+```
+
+The application enables unsigned local extensions only for this local build,
+as described in the HTTPFS section above.
 
 ### Rebuild the web shell
 

@@ -158,10 +158,10 @@ if (DUCKDB_WASM_LOADABLE_EXTENSIONS)
   if ("$ENV{USE_GENERATED_EXPORTED_LIST}" STREQUAL "yes")
     set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=2 -s EXPORTED_FUNCTIONS='@exported_list.txt'")
   else()
-    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=1 -s EXPORTED_FUNCTIONS='@../../../lib/base_exported_list.txt'")
+    set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s MAIN_MODULE=1 -s EXPORTED_FUNCTIONS='@${CMAKE_SOURCE_DIR}/base_exported_list.txt'")
   endif()
 else()
-  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s FILESYSTEM=0 -s ENVIRONMENT='web,node,worker' -s EXPORTED_FUNCTIONS='@../../../lib/base_exported_list.txt'")
+  set(WASM_LINK_FLAGS "${WASM_LINK_FLAGS} -s FILESYSTEM=0 -s ENVIRONMENT='web,node,worker' -s EXPORTED_FUNCTIONS='@${CMAKE_SOURCE_DIR}/base_exported_list.txt'")
 endif()
 
 # ---------------------------------------------------------------------------

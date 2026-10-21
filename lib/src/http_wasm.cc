@@ -78,12 +78,16 @@ class HTTPWasmClient : public HTTPClient {
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
-			if (z === "User-Agent") {}
-			else if (z.toLowerCase() === "authorization") {
-                        	xhr.setRequestHeader(z, UTF8ToString(ptr2));
-			} else {
-
-                        	xhr.setRequestHeader(z, encodeURI(UTF8ToString(ptr2)));
+			if (z !== "User-Agent") {
+				// Sent verbatim: encodeURI turns the quotes of an If-Match ETag into %22 (S3
+				// answers 412) and spaces into %20. Only a value the browser rejects outright
+				// falls back to the encoded form.
+				var v = UTF8ToString(ptr2);
+				try {
+					xhr.setRequestHeader(z, v);
+				} catch (e) {
+					xhr.setRequestHeader(z, encodeURI(v));
+				}
 			}
                     } catch (error) {
                 console.warn("Error while performing XMLHttpRequest.setRequestHeader()", error);
@@ -338,12 +342,16 @@ console.log('HEAD', UTF8ToString(ptr1), UTF8ToString(ptr2));
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
-			if (z === "User-Agent") {}
-			else if (z.toLowerCase() === "authorization") {
-                        	xhr.setRequestHeader(z, UTF8ToString(ptr2));
-			} else {
-				
-                        	xhr.setRequestHeader(z, encodeURI(UTF8ToString(ptr2)));
+			if (z !== "User-Agent") {
+				// Sent verbatim: encodeURI turns the quotes of an If-Match ETag into %22 (S3
+				// answers 412) and spaces into %20. Only a value the browser rejects outright
+				// falls back to the encoded form.
+				var v = UTF8ToString(ptr2);
+				try {
+					xhr.setRequestHeader(z, v);
+				} catch (e) {
+					xhr.setRequestHeader(z, encodeURI(v));
+				}
 			}
                     } catch (error) {
                 console.warn("Error while performing XMLHttpRequest.setRequestHeader()", error);
@@ -604,12 +612,16 @@ res->headers.Insert(head, tail);
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
-			if (z === "User-Agent") {}
-			else if (z.toLowerCase() === "authorization") {
-                        	xhr.setRequestHeader(z, UTF8ToString(ptr2));
-			} else {
-				
-                        	xhr.setRequestHeader(z, encodeURI(UTF8ToString(ptr2)));
+			if (z !== "User-Agent") {
+				// Sent verbatim: encodeURI turns the quotes of an If-Match ETag into %22 (S3
+				// answers 412) and spaces into %20. Only a value the browser rejects outright
+				// falls back to the encoded form.
+				var v = UTF8ToString(ptr2);
+				try {
+					xhr.setRequestHeader(z, v);
+				} catch (e) {
+					xhr.setRequestHeader(z, encodeURI(v));
+				}
 			}
                     } catch (error) {
                 console.warn("Error while performing XMLHttpRequest.setRequestHeader()", error);
@@ -781,12 +793,16 @@ res->headers.Insert(head, tail);
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
 			if (z.toLowerCase() === "content-type") hasContentType = true;
-			if (z === "User-Agent") {}
-			else if (z.toLowerCase() === "authorization") {
-                        	xhr.setRequestHeader(z, UTF8ToString(ptr2));
-			} else {
-				
-                        	xhr.setRequestHeader(z, encodeURI(UTF8ToString(ptr2)));
+			if (z !== "User-Agent") {
+				// Sent verbatim: encodeURI turns the quotes of an If-Match ETag into %22 (S3
+				// answers 412) and spaces into %20. Only a value the browser rejects outright
+				// falls back to the encoded form.
+				var v = UTF8ToString(ptr2);
+				try {
+					xhr.setRequestHeader(z, v);
+				} catch (e) {
+					xhr.setRequestHeader(z, encodeURI(v));
+				}
 			}
                     } catch (error) {
                 console.warn("Error while performing XMLHttpRequest.setRequestHeader()", error);
@@ -971,12 +987,16 @@ res->headers.Insert(head, tail);
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
 			if (z === "Host") z = "X-Host-Override";
-			if (z === "User-Agent") {}
-			else if (z.toLowerCase() === "authorization") {
-                        	xhr.setRequestHeader(z, UTF8ToString(ptr2));
-			} else {
-				
-                        	xhr.setRequestHeader(z, encodeURI(UTF8ToString(ptr2)));
+			if (z !== "User-Agent") {
+				// Sent verbatim: encodeURI turns the quotes of an If-Match ETag into %22 (S3
+				// answers 412) and spaces into %20. Only a value the browser rejects outright
+				// falls back to the encoded form.
+				var v = UTF8ToString(ptr2);
+				try {
+					xhr.setRequestHeader(z, v);
+				} catch (e) {
+					xhr.setRequestHeader(z, encodeURI(v));
+				}
 			}
                     } catch (error) {
                 console.warn("Error while performing XMLHttpRequest.setRequestHeader()", error);

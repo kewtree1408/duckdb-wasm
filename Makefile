@@ -29,6 +29,11 @@ JS_FILTER=
 EXTENSION_CACHE_DIR="${ROOT_DIR}/.ccache/extension"
 JSON_EXTENSION_CACHE_FILE="${EXTENSION_CACHE_DIR}/json"
 HTTPFS_SOURCE_DIR=$(abspath ${DUCKDB_HTTPFS_DIRECTORY})
+AWS_SOURCE_DIR=$(abspath ${DUCKDB_AWS_DIRECTORY})
+VCPKG_ROOT?=${HOME}/vcpkg
+VCPKG_TOOLCHAIN_PATH?=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake
+AWS_VCPKG_TOOLCHAIN_FILE=$(abspath ${VCPKG_TOOLCHAIN_PATH})
+AWS_PATCH_PREREQUISITE=$(if $(filter 1,${PATCHES_ALREADY_APPLIED}),,apply_patches)
 
 # Test commands default to Node 24 because newer Node releases are not yet
 # compatible with the generated Emscripten bindings. Both commands remain
@@ -362,7 +367,12 @@ app: wasm wasmpack shell docs js_tests_release
 
 .PHONY: build_loadable build_loadable_threads
 build_loadable:
-	USE_GENERATED_EXPORTED_LIST=no DUCKDB_PLATFORM=wasm_${TARGET} DUCKDB_WASM_LOADABLE_EXTENSIONS=1 ./scripts/wasm_build_lib.sh relsize ${TARGET}
+	DUCKDB_HTTPFS_DIRECTORY="${DUCKDB_HTTPFS_DIRECTORY}" \
+		DUCKDB_AWS_DIRECTORY="${DUCKDB_AWS_DIRECTORY}" \
+		VCPKG_ROOT="${VCPKG_ROOT}" \
+		VCPKG_TOOLCHAIN_PATH="${VCPKG_TOOLCHAIN_PATH}" \
+		USE_GENERATED_EXPORTED_LIST=no DUCKDB_PLATFORM=wasm_${TARGET} \
+		DUCKDB_WASM_LOADABLE_EXTENSIONS=1 ./scripts/wasm_build_lib.sh relsize ${TARGET}
 
 build_loadable_threads:
 	$(MAKE) build_loadable TARGET=threads
@@ -399,15 +409,47 @@ build_httpfs_local: reconfigure_httpfs_local
 		--target duckdb_local_extension_repo --parallel ${CORES}
 	yarn workspace @duckdb/duckdb-wasm build:release
 
+.PHONY: check_aws_local build_aws_local serve_aws_local
+check_aws_local: check_httpfs_local
+	@if [ -z "$(strip ${DUCKDB_AWS_DIRECTORY})" ]; then \
+		echo "Set DUCKDB_AWS_DIRECTORY to the duckdb-aws source checkout."; \
+		exit 1; \
+	fi
+	@if [ ! -f "${AWS_SOURCE_DIR}/CMakeLists.txt" ] || [ ! -f "${AWS_SOURCE_DIR}/vcpkg.json" ]; then \
+		echo "DUCKDB_AWS_DIRECTORY must contain duckdb-aws's CMakeLists.txt and vcpkg.json: ${AWS_SOURCE_DIR}"; \
+		exit 1; \
+	fi
+	@if [ ! -f "${AWS_VCPKG_TOOLCHAIN_FILE}" ]; then \
+		echo "Set VCPKG_TOOLCHAIN_PATH to vcpkg.cmake: ${AWS_VCPKG_TOOLCHAIN_FILE}"; \
+		exit 1; \
+	fi
+
+build_aws_local: ${AWS_PATCH_PREREQUISITE} check_aws_local
+	DUCKDB_AWS_DIRECTORY="${AWS_SOURCE_DIR}" \
+		DUCKDB_HTTPFS_DIRECTORY="${HTTPFS_SOURCE_DIR}" \
+		VCPKG_ROOT="${VCPKG_ROOT}" \
+		VCPKG_TOOLCHAIN_PATH="${AWS_VCPKG_TOOLCHAIN_FILE}" \
+		$(MAKE) build_loadable TARGET=base
+	DUCKDB_AWS_DIRECTORY="${AWS_SOURCE_DIR}" \
+		DUCKDB_HTTPFS_DIRECTORY="${HTTPFS_SOURCE_DIR}" \
+		cmake --build build/relsize/local_extensions/base/third_party/duckdb/src/duckdb_ep-build \
+		--target duckdb_local_extension_repo --parallel ${CORES}
+	yarn workspace @duckdb/duckdb-wasm build:release
+
 .PHONY: tests
 tests: DUCKDB_HTTPFS_DIRECTORY?=${HOME}/work/duckdb-httpfs
-tests: check_httpfs_local
-	$(MAKE) apply_patches
-	DUCKDB_HTTPFS_DIRECTORY="${HTTPFS_SOURCE_DIR}" $(MAKE) build_httpfs_local
+tests: DUCKDB_AWS_DIRECTORY?=${HOME}/work/duckdb-aws
+tests: check_aws_local
+	DUCKDB_HTTPFS_DIRECTORY="${HTTPFS_SOURCE_DIR}" \
+		$(MAKE) build_httpfs_local DUCKDB_AWS_DIRECTORY=
+	DUCKDB_AWS_DIRECTORY="${AWS_SOURCE_DIR}" \
+		DUCKDB_HTTPFS_DIRECTORY="${HTTPFS_SOURCE_DIR}" \
+		PATCHES_ALREADY_APPLIED=1 $(MAKE) build_aws_local
 	${TEST_YARN} workspace @duckdb/duckdb-wasm test:node
 	CHROME_BIN="${CHROME_BIN}" ${TEST_YARN} workspace @duckdb/duckdb-wasm test:chrome
 	CHROME_BIN="${CHROME_BIN}" ${TEST_YARN} workspace @duckdb/duckdb-wasm test:chrome:threads
 	CHROME_BIN="${CHROME_BIN}" ${TEST_YARN} workspace @duckdb/duckdb-wasm test:chrome:httpfs
+	CHROME_BIN="${CHROME_BIN}" ${TEST_YARN} workspace @duckdb/duckdb-wasm test:chrome:aws
 	CHROME_BIN="${CHROME_BIN}" ${TEST_YARN} workspace @duckdb/duckdb-wasm test:chrome:threads:smoke
 	${TEST_YARN} workspace @duckdb/duckdb-wasm lint
 	python3 ./scripts/run_clang_format.py \
@@ -417,12 +459,20 @@ tests: check_httpfs_local
 		lib/src/webdb.cc
 	git diff --check
 
-.PHONY: prepare_httpfs_local_app
+.PHONY: prepare_httpfs_local_app prepare_aws_local_app
 prepare_httpfs_local_app: build_httpfs_local wasmpack shell docs
 	DUCKDB_WASM_LOCAL_EXTENSIONS=1 yarn workspace @duckdb/duckdb-wasm-app build:release
 	cp -r build/extension_repository packages/duckdb-wasm-app/build/release/.
 
+prepare_aws_local_app: build_aws_local wasmpack shell docs
+	DUCKDB_WASM_LOCAL_EXTENSIONS=1 yarn workspace @duckdb/duckdb-wasm-app build:release
+	cp -r build/extension_repository packages/duckdb-wasm-app/build/release/.
+
 serve_httpfs_local: prepare_httpfs_local_app
+	npx http-server packages/duckdb-wasm-app/build/release \
+		-c-1 -o /original.html -a 127.0.0.1 -p 8081
+
+serve_aws_local: prepare_aws_local_app
 	npx http-server packages/duckdb-wasm-app/build/release \
 		-c-1 -o /original.html -a 127.0.0.1 -p 8081
 
