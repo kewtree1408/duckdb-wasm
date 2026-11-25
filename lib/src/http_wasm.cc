@@ -82,6 +82,7 @@ class HTTPWasmClient : public HTTPClient {
         exe = (char *)EM_ASM_PTR(
             {
                 var url = (UTF8ToString($0));
+                var proxy = UTF8ToString($4);
                 // threads: the memory is shared and growable, cached HEAP views may be stale in this worker; take fresh ones
                 var H8 = new Uint8Array(wasmMemory.buffer); var H32 = new Int32Array(wasmMemory.buffer);
                 if (typeof XMLHttpRequest === "undefined") {
@@ -102,7 +103,14 @@ class HTTPWasmClient : public HTTPClient {
 
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
-			if (z === "Host") z = "X-Host-Override";
+                        // The browser supplies Host; only the proxy needs the signed host forwarded.
+                        if (z.toLowerCase() === "host") {
+                            if (!proxy || !url.startsWith(proxy)) {
+                                i += 2;
+                                continue;
+                            }
+                            z = "X-Host-Override";
+                        }
 			if (z === "User-Agent") {}
 			else if (z.toLowerCase() === "authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
@@ -204,7 +212,7 @@ class HTTPWasmClient : public HTTPClient {
 
                 return fileOnWasmHeap;
             },
-            path.c_str(), n, z, "GET");
+            path.c_str(), n, z, "GET", web::experimental_s3_tables_global_proxy.c_str());
         // clang-format on
 
         i = 0;
@@ -334,6 +342,7 @@ class HTTPWasmClient : public HTTPClient {
         exe = (char *)EM_ASM_PTR(
             {
                 var url = (UTF8ToString($0));
+                var proxy = UTF8ToString($4);
                 // threads: the memory is shared and growable, cached HEAP views may be stale in this worker; take fresh ones
                 var H8 = new Uint8Array(wasmMemory.buffer); var H32 = new Int32Array(wasmMemory.buffer);
                 if (typeof XMLHttpRequest === "undefined") {
@@ -354,7 +363,13 @@ class HTTPWasmClient : public HTTPClient {
 
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
-			if (z === "Host") z = "X-Host-Override";
+                        if (z.toLowerCase() === "host") {
+                            if (!proxy || !url.startsWith(proxy)) {
+                                i += 2;
+                                continue;
+                            }
+                            z = "X-Host-Override";
+                        }
 			if (z === "User-Agent") {}
 			else if (z.toLowerCase() === "authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
@@ -451,7 +466,7 @@ class HTTPWasmClient : public HTTPClient {
 
                 return fileOnWasmHeap;
             },
-            path.c_str(), n, z, "HEAD");
+            path.c_str(), n, z, "HEAD", web::experimental_s3_tables_global_proxy.c_str());
 
         i = 0;
 
@@ -585,6 +600,7 @@ class HTTPWasmClient : public HTTPClient {
         exe = (char *)EM_ASM_PTR(
             {
                 var url = (UTF8ToString($0));
+                var proxy = UTF8ToString($6);
                 // threads: the memory is shared and growable, cached HEAP views may be stale in this worker; take fresh ones
                 var H8 = new Uint8Array(wasmMemory.buffer); var H32 = new Int32Array(wasmMemory.buffer);
                 if (typeof XMLHttpRequest === "undefined") {
@@ -605,7 +621,13 @@ class HTTPWasmClient : public HTTPClient {
 
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
-			if (z === "Host") z = "X-Host-Override";
+                        if (z.toLowerCase() === "host") {
+                            if (!proxy || !url.startsWith(proxy)) {
+                                i += 2;
+                                continue;
+                            }
+                            z = "X-Host-Override";
+                        }
 			if (z === "User-Agent") {}
 			else if (z.toLowerCase() === "authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
@@ -667,7 +689,7 @@ class HTTPWasmClient : public HTTPClient {
                 H8.set(STAT123, fileOnWasmHeap + 0);
                 return fileOnWasmHeap;
             },
-            path.c_str(), n, z, "POST", payload, buffer_length);
+            path.c_str(), n, z, "POST", payload, buffer_length, web::experimental_s3_tables_global_proxy.c_str());
         // clang-format on
 
         free(payload);
@@ -763,6 +785,7 @@ class HTTPWasmClient : public HTTPClient {
         exe = (char *)EM_ASM_PTR(
             {
                 var url = (UTF8ToString($0));
+                var proxy = UTF8ToString($6);
                 // threads: the memory is shared and growable, cached HEAP views may be stale in this worker; take fresh ones
                 var H8 = new Uint8Array(wasmMemory.buffer); var H32 = new Int32Array(wasmMemory.buffer);
                 if (typeof XMLHttpRequest === "undefined") {
@@ -784,7 +807,13 @@ class HTTPWasmClient : public HTTPClient {
 
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
-			if (z === "Host") z = "X-Host-Override";
+                        if (z.toLowerCase() === "host") {
+                            if (!proxy || !url.startsWith(proxy)) {
+                                i += 2;
+                                continue;
+                            }
+                            z = "X-Host-Override";
+                        }
 			if (z.toLowerCase() === "content-type") hasContentType = true;
 			if (z === "User-Agent") {}
 			else if (z.toLowerCase() === "authorization") {
@@ -898,7 +927,7 @@ class HTTPWasmClient : public HTTPClient {
 
                 return fileOnWasmHeap;
             },
-            path.c_str(), n, z, "PUT", payload, buffer_length);
+            path.c_str(), n, z, "PUT", payload, buffer_length, web::experimental_s3_tables_global_proxy.c_str());
         // clang-format on
 
         free(payload);
@@ -982,6 +1011,7 @@ class HTTPWasmClient : public HTTPClient {
         exe = (char *)EM_ASM_PTR(
             {
                 var url = (UTF8ToString($0));
+                var proxy = UTF8ToString($4);
                 // threads: the memory is shared and growable, cached HEAP views may be stale in this worker; take fresh ones
                 var H8 = new Uint8Array(wasmMemory.buffer); var H32 = new Int32Array(wasmMemory.buffer);
                 if (typeof XMLHttpRequest === "undefined") {
@@ -1002,7 +1032,13 @@ class HTTPWasmClient : public HTTPClient {
 
                     try {
 			var z = encodeURI(UTF8ToString(ptr1));
-			if (z === "Host") z = "X-Host-Override";
+                        if (z.toLowerCase() === "host") {
+                            if (!proxy || !url.startsWith(proxy)) {
+                                i += 2;
+                                continue;
+                            }
+                            z = "X-Host-Override";
+                        }
 			if (z === "User-Agent") {}
 			else if (z.toLowerCase() === "authorization") {
                         	xhr.setRequestHeader(z, UTF8ToString(ptr2));
@@ -1057,7 +1093,7 @@ class HTTPWasmClient : public HTTPClient {
                 H8.set(STAT123, fileOnWasmHeap + 0);
                 return fileOnWasmHeap;
             },
-            path.c_str(), n, z, "DELETE");
+            path.c_str(), n, z, "DELETE", web::experimental_s3_tables_global_proxy.c_str());
         // clang-format on
 
         i = 0;
